@@ -1,0 +1,19 @@
+{
+  "name": "com.unitycgchat.filmgrain",
+  "version": "1.0.0",
+  "displayName": "Film grain",
+  "description": "realistic film grain render feature",
+  "keywords": [
+    "urp",
+    "rendergraph",
+    "film grain"
+  ],
+  "unity": "6000.3",
+  "dependencies": {
+    "com.unity.render-pipelines.universal": "17.0.0"
+  },
+  "author": {
+    "name": "Barkar",
+    "url": "https://t.me/unity_cg"
+  }
+}
