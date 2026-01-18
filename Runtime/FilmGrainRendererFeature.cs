@@ -170,15 +170,57 @@ namespace UnityCgChat.FilmGrain
             if (bytes == null)
                 return null;
 
-            int expectedSize = width * height * 2;
-            if (bytes.bytes == null || bytes.bytes.Length < expectedSize)
+            byte[] raw = bytes.bytes;
+            if (raw == null)
+                return null;
+
+            int pixelCount = width * height;
+            int expectedR8Size = pixelCount;
+            int expectedR16Size = expectedR8Size * 2;
+
+            bool hasR16 = raw.Length >= expectedR16Size;
+            bool hasR8 = raw.Length >= expectedR8Size;
+
+            if (!hasR16 && !hasR8)
             {
-                Debug.LogWarningFormat("FilmGrain: raw texture data size mismatch for {0}. Expected {1} bytes, got {2}.",
-                    name, expectedSize, bytes.bytes == null ? 0 : bytes.bytes.Length);
+                Debug.LogWarningFormat("FilmGrain: raw texture data size mismatch for {0}. Expected {1} or {2} bytes, got {3}.",
+                    name, expectedR8Size, expectedR16Size, raw.Length);
                 return null;
             }
 
-            byte[] raw = bytes.bytes;
+            int inputSize = hasR16 ? expectedR16Size : expectedR8Size;
+            if (raw.Length != inputSize)
+            {
+                var trimmed = new byte[inputSize];
+                Buffer.BlockCopy(raw, 0, trimmed, 0, inputSize);
+                raw = trimmed;
+            }
+
+            TextureFormat format = hasR16 ? TextureFormat.R16 : TextureFormat.R8;
+            if (format == TextureFormat.R16 && !SystemInfo.SupportsTextureFormat(TextureFormat.R16))
+            {
+                if (SystemInfo.SupportsTextureFormat(TextureFormat.R8))
+                {
+                    raw = ConvertR16ToR8(raw, pixelCount);
+                    format = TextureFormat.R8;
+                }
+                else
+                {
+                    raw = ConvertR16ToR8(raw, pixelCount);
+                    raw = ConvertR8ToRGBA32(raw, pixelCount);
+                    format = TextureFormat.RGBA32;
+                }
+            }
+            else if (format == TextureFormat.R8 && !SystemInfo.SupportsTextureFormat(TextureFormat.R8))
+            {
+                raw = ConvertR8ToRGBA32(raw, pixelCount);
+                format = TextureFormat.RGBA32;
+            }
+
+            int expectedSize = format == TextureFormat.R16
+                ? expectedR16Size
+                : (format == TextureFormat.R8 ? expectedR8Size : pixelCount * 4);
+
             if (raw.Length != expectedSize)
             {
                 var trimmed = new byte[expectedSize];
@@ -186,7 +228,7 @@ namespace UnityCgChat.FilmGrain
                 raw = trimmed;
             }
 
-            var tex = new Texture2D(width, height, TextureFormat.R16, false, true);
+            var tex = new Texture2D(width, height, format, false, true);
             tex.name = name;
             tex.wrapMode = wrapMode;
             tex.filterMode = FilterMode.Bilinear;
@@ -209,24 +251,50 @@ namespace UnityCgChat.FilmGrain
                 return null;
 
             TextureFormat format;
-            int expectedSize;
+            bool hasR16 = raw.Length >= expectedR16Size;
+            bool hasR8 = raw.Length >= expectedR8Size;
 
-            if (raw.Length >= expectedR16Size)
-            {
-                format = TextureFormat.R16;
-                expectedSize = expectedR16Size;
-            }
-            else if (raw.Length >= expectedR8Size)
-            {
-                format = TextureFormat.R8;
-                expectedSize = expectedR8Size;
-            }
-            else
+            if (!hasR16 && !hasR8)
             {
                 Debug.LogWarningFormat("FilmGrain: raw noise data size mismatch for {0}. Expected {1} or {2} bytes, got {3}.",
                     name, expectedR8Size, expectedR16Size, raw.Length);
                 return null;
             }
+
+            int inputSize = hasR16 ? expectedR16Size : expectedR8Size;
+            if (raw.Length != inputSize)
+            {
+                var trimmed = new byte[inputSize];
+                Buffer.BlockCopy(raw, 0, trimmed, 0, inputSize);
+                raw = trimmed;
+            }
+
+            format = hasR16 ? TextureFormat.R16 : TextureFormat.R8;
+            int pixelCount = size * size;
+
+            if (format == TextureFormat.R16 && !SystemInfo.SupportsTextureFormat(TextureFormat.R16))
+            {
+                if (SystemInfo.SupportsTextureFormat(TextureFormat.R8))
+                {
+                    raw = ConvertR16ToR8(raw, pixelCount);
+                    format = TextureFormat.R8;
+                }
+                else
+                {
+                    raw = ConvertR16ToR8(raw, pixelCount);
+                    raw = ConvertR8ToRGBA32(raw, pixelCount);
+                    format = TextureFormat.RGBA32;
+                }
+            }
+            else if (format == TextureFormat.R8 && !SystemInfo.SupportsTextureFormat(TextureFormat.R8))
+            {
+                raw = ConvertR8ToRGBA32(raw, pixelCount);
+                format = TextureFormat.RGBA32;
+            }
+
+            int expectedSize = format == TextureFormat.R16
+                ? expectedR16Size
+                : (format == TextureFormat.R8 ? expectedR8Size : pixelCount * 4);
 
             if (raw.Length != expectedSize)
             {
@@ -244,6 +312,36 @@ namespace UnityCgChat.FilmGrain
             tex.Apply(false, true);
             tex.hideFlags = HideFlags.HideAndDontSave;
             return tex;
+        }
+
+        private static byte[] ConvertR16ToR8(byte[] raw, int pixelCount)
+        {
+            var output = new byte[pixelCount];
+            int srcIndex = 0;
+            for (int i = 0; i < pixelCount; ++i)
+            {
+                int lo = raw[srcIndex++];
+                int hi = raw[srcIndex++];
+                int value = lo | (hi << 8);
+                int quantized = (value * 255 + 32767) / 65535;
+                output[i] = (byte)quantized;
+            }
+            return output;
+        }
+
+        private static byte[] ConvertR8ToRGBA32(byte[] raw, int pixelCount)
+        {
+            var output = new byte[pixelCount * 4];
+            int dstIndex = 0;
+            for (int i = 0; i < pixelCount; ++i)
+            {
+                byte value = raw[i];
+                output[dstIndex++] = value;
+                output[dstIndex++] = 0;
+                output[dstIndex++] = 0;
+                output[dstIndex++] = 255;
+            }
+            return output;
         }
 
         private sealed class FilmGrainRenderPass : ScriptableRenderPass
