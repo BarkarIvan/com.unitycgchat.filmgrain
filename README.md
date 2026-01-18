@@ -7,8 +7,8 @@ See `Documentation~/README.md` for when to keep defaults vs. generate a custom L
 Runtime applies additive noise scaled by the LUT-derived std and `Intensity`.
 
 Examples:
-![Film grain example](Documentation~/images/grain.gif)
-![Film grain example 2](Documentation~/images/grain%202.gif)
+![Film grain example](https://github.com/BarkarIvan/com.unitycgchat.filmgrain/blob/main/Documentation~/Images/grain.gif)
+![Film grain example 2](https://github.com/BarkarIvan/com.unitycgchat.filmgrain/blob/main/Documentation~/Images/grain%202.gif)
 
 Based on:
 - "Film Grain Rendering and Parameter Estimation" (Zhang et al., 2023)  
