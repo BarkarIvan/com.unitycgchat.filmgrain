@@ -1,6 +1,6 @@
-# Film Grain (URP 17 RenderGraph)
+# Film Grain (URP 17 Render feature)
 
-Film Grain render feature for URP 17 (Unity 6.3), using a LUT-driven statistical model and correlated noise to approximate film grain efficiently.
+Using a LUT-driven statistical model and correlated noise to approximate film grain efficiently.
 
 Based on:
 - "Film Grain Rendering and Parameter Estimation" (Zhang et al., 2023)  
