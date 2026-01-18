@@ -12,7 +12,6 @@ Usage: add `FilmGrainRendererFeature` to your URP Renderer asset. Default LUT/No
 See `Documentation~/README.md` for when to keep defaults vs. generate a custom LUT/Noise asset.
 Runtime applies additive noise scaled by the LUT-derived std and `Intensity`.
 
-Examples:
 ![Film grain example](https://github.com/BarkarIvan/com.unitycgchat.filmgrain/blob/main/Documentation~/Images/grain.gif)
 ![Film grain example 2](https://github.com/BarkarIvan/com.unitycgchat.filmgrain/blob/main/Documentation~/Images/grain%202.gif)
 
